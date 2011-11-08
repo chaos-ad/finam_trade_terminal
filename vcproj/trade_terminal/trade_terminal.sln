@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "transaq_terminal", "transaq_terminal.vcxproj", "{EB7104C5-E6EC-4995-9EED-24E7503C4A26}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "trade_terminal", "trade_terminal.vcxproj", "{EB7104C5-E6EC-4995-9EED-24E7503C4A26}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

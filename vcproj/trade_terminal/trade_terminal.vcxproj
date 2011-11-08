@@ -13,7 +13,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EB7104C5-E6EC-4995-9EED-24E7503C4A26}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>transaq_terminal</RootNamespace>
+    <RootNamespace>trade_terminal</RootNamespace>
+    <ProjectName>trade_terminal</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -46,7 +47,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(BOOST_ROOT)</IncludePath>
     <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(BOOST_ROOT)\lib</LibraryPath>
-    <OutDir>Z:\transaq_terminal\install\</OutDir>
+    <OutDir>Z:\trade_terminal\install\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
