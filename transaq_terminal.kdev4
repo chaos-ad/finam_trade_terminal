@@ -1,0 +1,4 @@
+[Project]
+Name=transaq_terminal
+Manager=KDevCMakeManager
+VersionControl=kdevgit
