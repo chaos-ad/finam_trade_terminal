@@ -24,6 +24,7 @@ int main(int argc, char **argv)
     {
         std::string command;
         std::getline(std::cin, command);
+        if (command == "exit") break;
         std::string result = transaq::wrapper::send_command(command);
         boost::lock_guard<boost::mutex> lock(mutex);
         std::cout << result << std::endl;
