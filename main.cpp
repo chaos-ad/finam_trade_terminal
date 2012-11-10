@@ -2,7 +2,7 @@
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include "transaq_client.h"
+#include "transaq_client.hpp"
 
 boost::program_options::options_description available_options()
 {
@@ -11,12 +11,13 @@ boost::program_options::options_description available_options()
     {
         description.add_options()
         ("help", "Produce this message")
-        ("host", boost::program_options::value<std::string>()->default_value("localhost"), "Connection host")
-        ("port", boost::program_options::value<boost::uint16_t>()->default_value(31337), "Connection port")
         ("dllpath", boost::program_options::value<std::string>()->default_value("txmlconnector.dll"), "Path to the transaq dll")
-        ("secure", boost::program_options::value<bool>()->default_value(false), "Use SSL")
-        ("keyfile", boost::program_options::value<std::string>()->default_value("key.pem"), "Path to SSL key")
-        ("certfile", boost::program_options::value<std::string>()->default_value("cert.pem"), "Path to SSL certificate");
+		("name", boost::program_options::value<std::string>()->default_value("FZTC202802"), "Username")
+		("password", boost::program_options::value<std::string>()->default_value("*"), "Password")
+		("host", boost::program_options::value<std::string>()->default_value("213.247.141.133"), "Host")
+		("port", boost::program_options::value<std::string>()->default_value("3900"), "Port")
+        ("logdir", boost::program_options::value<std::string>()->default_value("logs"), "Log folder")
+        ("loglevel", boost::program_options::value<int32_t>()->default_value(2), "Log level");
     }
     return description;
 }
@@ -49,7 +50,8 @@ int main(int argc, char **argv)
         }
         else
         {
-            transaq::start(options);
+            transaq::client client(options);
+            client.run();
         }
     }
     catch( std::exception & ex )

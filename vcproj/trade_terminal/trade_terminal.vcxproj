@@ -10,6 +10,16 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\get_time.hpp" />
+    <ClInclude Include="..\..\transaq_client.hpp" />
+    <ClInclude Include="..\..\transaq_wrapper.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\main.cpp" />
+    <ClCompile Include="..\..\transaq_client.cpp" />
+    <ClCompile Include="..\..\transaq_wrapper.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EB7104C5-E6EC-4995-9EED-24E7503C4A26}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -40,13 +50,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(BOOST_ROOT);C:\OpenSSL-Win32\include</IncludePath>
-    <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(BOOST_ROOT)\lib;C:\OpenSSL-Win32\lib</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>$(TMP)\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(BOOST_ROOT);C:\OpenSSL-Win32\include</IncludePath>
-    <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(BOOST_ROOT)\lib;C:\OpenSSL-Win32\lib</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>$(TMP)\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -59,7 +71,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ShowProgress>NotSet</ShowProgress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -79,23 +92,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ProgramDatabaseFile>
       </ProgramDatabaseFile>
-      <AdditionalDependencies>libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\main.cpp" />
-    <ClCompile Include="..\..\transaq_client.cpp" />
-    <ClCompile Include="..\..\transaq_loader_win.cpp" />
-    <ClCompile Include="..\..\transaq_wrapper.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\get_time.hpp" />
-    <ClInclude Include="..\..\ssl_socket.hpp" />
-    <ClInclude Include="..\..\tcp_socket.hpp" />
-    <ClInclude Include="..\..\transaq_client.h" />
-    <ClInclude Include="..\..\transaq_loader.h" />
-    <ClInclude Include="..\..\transaq_wrapper.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

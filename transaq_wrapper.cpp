@@ -1,7 +1,5 @@
-#include "transaq_loader.h"
-#include "transaq_wrapper.h"
-
-#include <boost/shared_ptr.hpp>
+#include <windows.h>
+#include "transaq_wrapper.hpp"
 
 #ifdef WIN32
 #define STDCALL __stdcall
@@ -12,94 +10,124 @@
 /////////////////////////////////////////////////////////////////////////////
 
 namespace transaq {
-namespace wrapper {
 
-class impl
+class wrapper::impl
 {
-private :
-    typedef bool  (STDCALL *internal_callback_t)(char* data);
+public:
+    typedef wrapper::callback_t callback_t;
+    typedef bool  (STDCALL *internal_callback_t)(char* data, void*);
     typedef char* (STDCALL *send_command_t)(const char* data);
     typedef bool  (STDCALL *free_memory_t)(char* data);
-    typedef bool  (STDCALL *set_callback_t)(internal_callback_t callback);
+    typedef bool  (STDCALL *set_callback_t)(internal_callback_t callback, void * userdata);
+    typedef char* (STDCALL *uninitialize_t)();
+    typedef char* (STDCALL *initialize_t)(const char* dir, int level);
+    typedef char* (STDCALL *set_log_level_t)(int level);
 
-private :
-    impl(callback_t const& callback, std::string const& libpath)
-        : callback(callback)
-        , library(loader::load_library(libpath), loader::unload_library)
-        , free_memory_fn(loader::load_fun<free_memory_t>(library.get(), "FreeMemory"))
-        , send_command_fn(loader::load_fun<send_command_t>(library.get(), "SendCommand"))
+public:
+    impl(callback_t const& callback, std::string const& libpath, std::string const& logdir, int32_t loglevel)
+        : library_(library::load(libpath), library::unload)
+		, callback_fn_(callback)
+        , initialize_fn_(library::load_fun<initialize_t>(library_.get(), "Initialize"))
+        , uninitialize_fn_(library::load_fun<uninitialize_t>(library_.get(), "UnInitialize"))
+        , set_log_level_fn_(library::load_fun<set_log_level_t>(library_.get(), "SetLogLevel"))
+        , set_callback_fn_(library::load_fun<set_callback_t>(library_.get(), "SetCallbackEx"))
+        , free_memory_fn_(library::load_fun<free_memory_t>(library_.get(), "FreeMemory"))
+        , send_command_fn_(library::load_fun<send_command_t>(library_.get(), "SendCommand"))
     {
-        set_callback_t set_callback = loader::load_fun<set_callback_t>(library.get(), "SetCallback");
-        set_callback(&impl::handle_data);
-    }
-
-public :
-    static void stop()
-    {
-        if (instance()) {
-            instance().reset();
-        } else {
-            throw std::runtime_error("wrapper is not running");
+		boost::shared_ptr<char> error(initialize_fn_(logdir.c_str(), loglevel), free_memory_fn_);
+        if (error)
+        {
+            throw std::runtime_error(error.get());
         }
+
+		internal_callback_t int_callback = &impl::handle_data_raw;
+        set_callback_fn_(int_callback, static_cast<void*>(this));
     }
 
-    static void start(const callback_t& callback, std::string const& path)
+    ~impl()
     {
-        if(!instance().get()) {
-            instance().reset(new impl(callback, path));
-        } else {
-            throw std::runtime_error("wrapper already started");
-        }
+        uninitialize_fn_();
     }
 
-    static std::string send_command(std::string const& cmd)
+public:
+    std::string send_command(std::string const& cmd)
     {
-		boost::shared_ptr<char> result
-		(
-			instance()->send_command_fn(cmd.c_str()),
-			instance()->free_memory_fn
-		);
+		boost::shared_ptr<char> result(send_command_fn_(cmd.c_str()), free_memory_fn_);
 		return std::string(result.get());
     }
 
-    static bool STDCALL handle_data(char * data)
+private:
+    static bool STDCALL handle_data_raw(char * data, void * ptr)
     {
-        boost::shared_ptr<char> pdata(data, instance()->free_memory_fn);
-        return instance()->callback(std::string(pdata.get()));
+        return static_cast<impl*>(ptr)->handle_data(data);
     }
 
-private :
-    static boost::shared_ptr<impl>&  instance()
+    bool handle_data(char * data)
     {
-        static boost::shared_ptr<impl> instance;
-        return instance;
+        boost::shared_ptr<char> pdata(data, free_memory_fn_);
+        return callback_fn_(std::string(pdata.get()));
     }
 
-private :
-    callback_t                      callback;
-    boost::shared_ptr<void>         library;
-    free_memory_t                   free_memory_fn;
-    send_command_t                  send_command_fn;
+private:
+	struct library 
+	{
+		static void unload(void * library) 
+		{
+			FreeLibrary(static_cast<HMODULE>(library));
+		}
+
+		static void* load(std::string const& path)
+		{
+			HMODULE module = LoadLibrary(path.c_str());
+			if (!module)
+			{
+				throw std::runtime_error("library not found");
+			}
+			return static_cast<void*>(module);
+		}
+
+		static void* load_fun_raw(void * library, std::string const& name)
+		{
+			void * address = GetProcAddress(static_cast<HMODULE>(library), name.c_str());
+			if (!address)
+			{
+				throw std::runtime_error("function not found");
+			}
+			return address;
+		}
+
+		template <class fun_t>
+		static fun_t load_fun(void * library, std::string const& name)
+		{
+			return reinterpret_cast<fun_t>(load_fun_raw(library, name));
+		}
+	};
+
+private:
+    boost::shared_ptr<void>         library_;
+	callback_t                      callback_fn_;
+    initialize_t                    initialize_fn_;
+    uninitialize_t                  uninitialize_fn_;
+    set_log_level_t                 set_log_level_fn_;
+    set_callback_t                  set_callback_fn_;
+    free_memory_t                   free_memory_fn_;
+    send_command_t                  send_command_fn_;
 };
 
 /////////////////////////////////////////////////////////////////////////////
 
-void start(const callback_t& callback, std::string const& libpath)
-{
-    impl::start(callback, libpath);
-}
+wrapper::wrapper(callback_t const& callback, std::string const& libpath, std::string const& logdir, int32_t loglevel)
+    : impl_(new impl(callback, libpath, logdir, loglevel))
+{}
 
-std::string send_command(const std::string& cmd)
-{
-    return impl::send_command(cmd);
-}
+wrapper::~wrapper() {}
 
-void stop()
+std::string wrapper::send_command(std::string const& cmd)
 {
-    impl::stop();
+    return impl_->send_command(cmd);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 
-}
-}
+} // namespace transaq
+

@@ -1,166 +1,114 @@
-#include <deque>
+#include <map>
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/array.hpp>
 #include <boost/asio/signal_set.hpp>
 
-#include "get_time.hpp"
-#include "tcp_socket.hpp"
-#include "ssl_socket.hpp"
-#include "transaq_client.h"
-#include "transaq_wrapper.h"
+#include "transaq_client.hpp"
+#include "transaq_wrapper.hpp"
 
-namespace
+namespace transaq {
+
+/////////////////////////////////////////////////////////////////////////////
+    
+class client::impl
 {
-    void throw_error(const boost::system::error_code& err)
+public:
+    typedef std::map<std::string, std::string> args_t;
+
+public:
+    impl(boost::program_options::variables_map const& options)
+        : sigset_(service_, SIGINT, SIGTERM)
     {
-        if (err)
-        {
-            std::clog << get_time() << ": Error: " << err.message() << std::endl;
-            boost::system::system_error e(err);
-            boost::throw_exception(e);
-        }
+        sigset_.async_wait(boost::bind(&impl::handle_signal, this, _1, _2));
+        wrapper_.reset
+        (
+            new wrapper
+            (
+                boost::bind(&impl::handle_raw_data, this, _1), 
+                options["dllpath"].as<std::string>(),
+                options["logdir"].as<std::string>(),
+                options["loglevel"].as<int32_t>()
+            )
+        );
+
+        args_t args;
+        args["login"] = options["name"].as<std::string>();
+        args["password"] = options["password"].as<std::string>();
+		args["host"] = options["host"].as<std::string>();
+		args["port"] = options["port"].as<std::string>();
+        send_command("connect", args);
     }
-}
 
-namespace transaq
-{
-
-    template <typename socket_type>
-    class client
+    void run()
     {
-    public :
-        client(boost::program_options::variables_map const& options)
-            : send_size(0)
-            , recv_size(0)
-            , sigset(service, SIGINT, SIGTERM)
-            , socket(service, options)
-        {
-            std::string dllpath = options["dllpath"].as<std::string>();
-            wrapper::start(boost::bind(&client::handle_data, this, _1), dllpath);
-            sigset.async_wait(boost::bind(&client::handle_signal, this, _1, _2));
-            start_read();
-        }
+        service_.run();
+    }
 
-        ~client()
-        {
-            wrapper::stop();
-        }
-
-        void run()
-        {
-            service.run();
-        }
-
-        void stop()
-        {
-            service.stop();
-        }
-
-    private :
-        void start_read()
-        {
-            boost::asio::async_read
-            (
-                socket.get(),
-                boost::asio::buffer(&recv_size, sizeof(recv_size)),
-                boost::bind(&client::handle_read_size, this, _1)
-            );
-        }
-
-        void handle_read_size(boost::system::error_code err)
-        {
-            throw_error(err);
-            recv_size = ntohl(recv_size);
-            recv_buffer.resize(recv_size, 0);
-            boost::asio::async_read
-            (
-                socket.get(),
-                boost::asio::buffer(recv_buffer),
-                boost::bind(&client::handle_read_data, this, _1)
-            );
-        }
-
-        void handle_read_data(boost::system::error_code err)
-        {
-            throw_error(err);
-            std::string command(recv_buffer.data(), recv_buffer.size());
-            std::clog << get_time() << ": Sending command:" << std::endl << command << std::endl << std::endl;
-            write( transaq::wrapper::send_command(command) );
-            start_read();
-        }
-
-        void handle_signal(boost::system::error_code const& err, int signal_number)
-        {
-            if(!err)
-            {
-                stop();
-            }
-        }
-
-        bool handle_data(std::string const& data)
-        {
-            // called from different thread
-            service.post(boost::bind(&client::write, this, data));
-            return true;
-        }
-
-        void write(std::string const& data)
-        {
-            send_buffer.push_back(data);
-            start_write();
-        }
-
-        void start_write()
-        {
-            if (!send_size && !send_buffer.empty())
-            {
-                send_size = htonl(send_buffer.front().size());
-                boost::array<boost::asio::const_buffer, 2> buffers;
-                buffers[0] = boost::asio::buffer(&send_size, sizeof(send_size));
-                buffers[1] = boost::asio::buffer(send_buffer.front());
-                boost::asio::async_write
-                (
-                    socket.get(),
-                    buffers,
-                    boost::bind(&client::handle_write, this, _1)
-                );
-            }
-        }
-
-        void handle_write(boost::system::error_code err)
-        {
-            throw_error(err);
-            send_buffer.pop_front();
-            send_size = 0;
-            start_write();
-        }
-
-    private :
-        uint32_t                        recv_size;
-        std::vector<char>               recv_buffer;
-
-        uint32_t                        send_size;
-        std::deque<std::string>         send_buffer;
-
-        boost::asio::io_service         service;
-        boost::asio::signal_set         sigset;
-
-        socket_type                     socket;
-    };
-
-    /////////////////////////////////////////////////////////////////////////
-
-    void start(boost::program_options::variables_map & options)
+    void stop()
     {
-        if (!options["secure"].as<bool>())
+        service_.stop();
+    }
+
+private:
+    void handle_signal(boost::system::error_code const& err, int signal_number)
+    {
+        if(!err)
         {
-            client<tcp_socket> c(options); c.run();
-        }
-        else
-        {
-            client<ssl_socket> c(options); c.run();
+            stop();
         }
     }
 
+    bool handle_raw_data(std::string const& data)
+    {
+        // called from different thread
+        service_.post(boost::bind(&impl::handle_data, this, data));
+        return true;
+    }
+
+    void handle_data(std::string const& data)
+    {
+        std::cout << "Data received: " << data << std::endl;
+    }
+
+    std::string send_command(std::string const& id, args_t const& args)
+    {
+        std::string command = "<command id='" + id + "'>";
+        args_t::const_iterator i, end = args.end();
+        for( i = args.begin(); i != end; ++i )
+        {
+            command += "<" + i->first + ">";
+            command += i->second;
+            command += "</" + i->first + ">";
+        }
+        command += "</command>";
+        std::string result = wrapper_->send_command(command);
+        handle_data(result);
+        return result;
+    }
+
+private:
+    boost::asio::io_service         service_;
+    boost::asio::signal_set         sigset_;
+    boost::shared_ptr<wrapper>      wrapper_;
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+client::client(boost::program_options::variables_map const& options)
+    : impl_(new impl(options))
+{}
+
+void client::run()
+{
+    impl_->run();
 }
+
+void client::stop()
+{
+	impl_->stop();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace transaq
