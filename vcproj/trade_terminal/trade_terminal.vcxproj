@@ -11,12 +11,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\base_client.hpp" />
+    <ClInclude Include="..\..\base_reactor.hpp" />
+    <ClInclude Include="..\..\base_strategy.hpp" />
     <ClInclude Include="..\..\get_time.hpp" />
+    <ClInclude Include="..\..\pugiconfig.hpp" />
+    <ClInclude Include="..\..\pugixml.hpp" />
+    <ClInclude Include="..\..\test_strategy.hpp" />
     <ClInclude Include="..\..\transaq_client.hpp" />
     <ClInclude Include="..\..\transaq_wrapper.hpp" />
+    <ClInclude Include="..\..\types.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\base_strategy.cpp" />
     <ClCompile Include="..\..\main.cpp" />
+    <ClCompile Include="..\..\pugixml.cpp" />
     <ClCompile Include="..\..\transaq_client.cpp" />
     <ClCompile Include="..\..\transaq_wrapper.cpp" />
   </ItemGroup>
@@ -30,7 +39,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -49,7 +58,6 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_ROOT)\lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(TMP)\$(ProjectName)\$(Configuration)\</IntDir>

@@ -78,7 +78,7 @@ private:
 
 		static void* load(std::string const& path)
 		{
-			HMODULE module = LoadLibrary(path.c_str());
+			HMODULE module = LoadLibraryA(path.c_str());
 			if (!module)
 			{
 				throw std::runtime_error("library not found");
