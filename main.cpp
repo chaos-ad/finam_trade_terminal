@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         else
         {
             transaq::client client(options);
-			client.add_strategy("test", boost::shared_ptr<test_strategy>(new test_strategy()));
+			client.add_strategy("test", boost::shared_ptr<test_strategy>(new test_strategy(client)));
             client.run();
         }
     }

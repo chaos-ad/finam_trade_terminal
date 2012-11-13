@@ -1,10 +1,11 @@
 
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/foreach.hpp>
 
 #include "get_time.hpp"
+#include "locale_bool.hpp"
 #include "transaq_client.hpp"
 #include "transaq_wrapper.hpp"
 #include "libs/pugixml/pugixml.hpp"
@@ -28,6 +29,7 @@ public:
         : options_(options)
         , sigset_(service_, SIGINT, SIGTERM)
     {
+        handlers_["ticks"] = &impl::handle_ticks;
         handlers_["server_status"] = &impl::handle_server_status;
 
         sigset_.async_wait(boost::bind(&impl::handle_signal, this, _1, _2));
@@ -103,33 +105,53 @@ private:
         }
     }
 
-    bool connect()
+    void connect()
     {
         std::string name = options_["name"].as<std::string>();
         std::string pass = options_["pass"].as<std::string>();
         std::string host = options_["host"].as<std::string>();
         std::string port = options_["port"].as<std::string>();
 
-        std::clog << "connecting to " << host << ":" << port << " as '" << name << "'..." << std::endl;
+		std::clog << "connecting to " << host << ":" << port << " as '" << name << "'..." << std::endl;
 
-        std::string command =
-        "<command id='connect'>"
-            "<login>"    + name + "</login>"
-            "<password>" + pass + "</password>"
-            "<host>"     + host + "</host>"
-            "<port>"     + port + "</port>"
-        "</command>";
-
-        return send_command(command);
+		boost::format fmt("<command id=\"connect\"><login>%1%</login><password>%2%</password><host>%3%</host><port>%4%</port></command>");
+		send_command( boost::str(fmt % name % pass % host % port) );
     }
 
-    bool send_command(std::string const& command)
+    void send_command(std::string const& command)
     {
         std::string resposne = wrapper_->send_command(command);
-        return resposne == "<result success=\"true\"/>";
+		pugi::xml_document xml;
+        pugi::xml_parse_result res = xml.load(resposne.c_str());
+        if (!res)
+        {
+            throw std::runtime_error(res.description());
+        }
+		if (!xml.child("result").attribute("success").as_bool())
+		{
+			throw std::logic_error(xml.child("result").child("message").text().as_string());
+		}
     }
 
-    /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+public: // base_client api:
+
+    void subscribe_ticks(bool filter, std::map<int32_t, int32_t> const& args)
+    {
+        boost::format cmd_fmt("<command id=\"subscribe_ticks\" filter=\"%1%\">%2%</command>");
+        boost::format args_fmt("<security secid=\"%1%\" tradeno=\"%2%\"/>");
+        
+        std::string args_str;
+        std::map<int32_t, int32_t>::const_iterator i, end = args.end();
+        for( i = args.begin(); i != end; ++i )
+        {
+            args_str += boost::str(args_fmt % i->first % i->second);
+        }
+        send_command(boost::str(cmd_fmt % locale_bool(filter) % args_str));
+    }
+
+/////////////////////////////////////////////////////////////////////////////
+private: // packet handlers:
 
     void handle_server_status(pugi::xml_node const& node)
     {
@@ -172,6 +194,11 @@ private:
         }
     }
 
+    void handle_ticks(pugi::xml_node const& node)
+    {
+        // TODO: parse ticks here
+    }
+
     /////////////////////////////////////////////////////////////////////////
 
 
@@ -182,6 +209,8 @@ private:
     boost::shared_ptr<wrapper>              wrapper_;
     handlers_t                              handlers_;
     strategies_t                            strategies_;
+
+    std::map<int32_t, int32_t>              subscribed_ticks_;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -210,6 +239,11 @@ void client::add_strategy(std::string const& name, strategy_ptr_t const& strateg
 void client::del_strategy(std::string const& name)
 {
     impl_->del_strategy(name);
+}
+
+void client::subscribe_ticks(bool filter, std::map<int32_t, int32_t> const& args)
+{
+    impl_->subscribe_ticks(filter, args);
 }
 
 /////////////////////////////////////////////////////////////////////////////
