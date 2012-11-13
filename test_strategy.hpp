@@ -2,22 +2,10 @@
 
 #include "base_strategy.hpp"
 
-namespace transaq {
-
-class test_strategy : public base_strategy
+class test_strategy : public transaq::base_strategy
 {
 public:
-	test_strategy(base_client & client) 
-		: base_strategy(client) 
-	{};
-
-	virtual void handle_info(types::server_status const& status)
-	{
-		if (!status.connected)
-		{
-			client().reconnect();
-		}
-	}
+	virtual void recovering();
+	virtual void disconnected();
+    virtual void connected(int32_t id);
 };
-
-} // namespace transaq

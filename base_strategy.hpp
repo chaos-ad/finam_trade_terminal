@@ -1,31 +1,17 @@
 #pragma once
 
-#include "types.hpp"
-#include "pugixml.hpp"
-#include "base_client.hpp"
-#include "base_reactor.hpp"
-#include <boost/unordered_map.hpp>
+#include <cstdint>
 
 namespace transaq {
 
-class base_strategy : public base_reactor
+class base_strategy
 {
 public:
-	typedef void (*handler_t)(pugi::xml_node const& node, base_strategy & strategy);
-	typedef boost::unordered_map<std::string, handler_t> handler_map_t;
+	virtual void recovering() = 0;
+    virtual void disconnected() = 0;
+	virtual void connected(int32_t id) = 0;
 
-public:
-	base_strategy(base_client & client);
-	
-	virtual void handle_data(std::string const& data);
-	virtual void handle_info(types::server_status const&) = 0;
-
-protected:
-	base_client& client() const { return client_; }
-
-private:
-	base_client & client_;
-	handler_map_t handlers_;
+	virtual ~base_strategy() {};
 };
 
 } // namespace transaq

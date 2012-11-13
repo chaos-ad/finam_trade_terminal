@@ -11,21 +11,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\base_client.hpp" />
-    <ClInclude Include="..\..\base_reactor.hpp" />
     <ClInclude Include="..\..\base_strategy.hpp" />
     <ClInclude Include="..\..\get_time.hpp" />
-    <ClInclude Include="..\..\pugiconfig.hpp" />
-    <ClInclude Include="..\..\pugixml.hpp" />
+    <ClInclude Include="..\..\libs\pugixml\pugiconfig.hpp" />
+    <ClInclude Include="..\..\libs\pugixml\pugixml.hpp" />
     <ClInclude Include="..\..\test_strategy.hpp" />
     <ClInclude Include="..\..\transaq_client.hpp" />
     <ClInclude Include="..\..\transaq_wrapper.hpp" />
-    <ClInclude Include="..\..\types.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\base_strategy.cpp" />
+    <ClCompile Include="..\..\libs\pugixml\pugixml.cpp" />
     <ClCompile Include="..\..\main.cpp" />
-    <ClCompile Include="..\..\pugixml.cpp" />
+    <ClCompile Include="..\..\test_strategy.cpp" />
     <ClCompile Include="..\..\transaq_client.cpp" />
     <ClCompile Include="..\..\transaq_wrapper.cpp" />
   </ItemGroup>

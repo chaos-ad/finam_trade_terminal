@@ -2,6 +2,7 @@
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include "test_strategy.hpp"
 #include "transaq_client.hpp"
 
 boost::program_options::options_description available_options()
@@ -51,6 +52,7 @@ int main(int argc, char **argv)
         else
         {
             transaq::client client(options);
+			client.add_strategy("test", boost::shared_ptr<test_strategy>(new test_strategy()));
             client.run();
         }
     }
