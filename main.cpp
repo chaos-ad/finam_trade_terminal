@@ -13,10 +13,10 @@ boost::program_options::options_description available_options()
         description.add_options()
         ("help", "Produce this message")
         ("dllpath", boost::program_options::value<std::string>()->default_value("txmlconnector.dll"), "Path to the transaq dll")
-		("name", boost::program_options::value<std::string>()->default_value("*"), "Username")
-		("pass", boost::program_options::value<std::string>()->default_value("*"), "Password")
-		("host", boost::program_options::value<std::string>()->default_value("213.247.141.133"), "Host")
-		("port", boost::program_options::value<std::string>()->default_value("3900"), "Port")
+        ("name", boost::program_options::value<std::string>()->default_value("*"), "Username")
+        ("pass", boost::program_options::value<std::string>()->default_value("*"), "Password")
+        ("host", boost::program_options::value<std::string>()->default_value("213.247.141.133"), "Host")
+        ("port", boost::program_options::value<std::string>()->default_value("3900"), "Port")
         ("logdir", boost::program_options::value<std::string>()->default_value("logs"), "Log folder")
         ("loglevel", boost::program_options::value<int32_t>()->default_value(2), "Log level");
     }
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         else
         {
             transaq::client client(options);
-			client.add_strategy("test", boost::shared_ptr<test_strategy>(new test_strategy(client)));
+            client.add_strategy("test", boost::shared_ptr<test_strategy>(new test_strategy(client)));
             client.run();
         }
     }

@@ -5,7 +5,15 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>--name 000000118175 --pass 3gAdivM</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>--name TCNN9872 --pass w2gUvY --host 78.41.194.72 --port 3939</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugViaProxy|Win32'">
+    <LocalDebuggerCommandArguments>--name TCNN9872 --pass w2gUvY --host ec2-54-246-40-10.eu-west-1.compute.amazonaws.com --port 80</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug through proxy|Win32'">
+    <LocalDebuggerCommandArguments>--name TCNN9872 --pass w2gUvY --host 54.246.40.10 --port 80</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
