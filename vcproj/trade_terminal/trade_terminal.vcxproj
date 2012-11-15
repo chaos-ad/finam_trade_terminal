@@ -13,13 +13,14 @@
   <ItemGroup>
     <ClInclude Include="..\..\base_client.hpp" />
     <ClInclude Include="..\..\base_strategy.hpp" />
-    <ClInclude Include="..\..\get_time.hpp" />
+    <ClInclude Include="..\..\time.hpp" />
     <ClInclude Include="..\..\libs\pugixml\pugiconfig.hpp" />
     <ClInclude Include="..\..\libs\pugixml\pugixml.hpp" />
     <ClInclude Include="..\..\locale_bool.hpp" />
     <ClInclude Include="..\..\test_strategy.hpp" />
     <ClInclude Include="..\..\transaq_client.hpp" />
     <ClInclude Include="..\..\transaq_wrapper.hpp" />
+    <ClInclude Include="..\..\types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\pugixml\pugixml.cpp" />

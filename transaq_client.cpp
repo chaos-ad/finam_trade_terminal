@@ -4,7 +4,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/asio/signal_set.hpp>
 
-#include "get_time.hpp"
+#include "time.hpp"
 #include "locale_bool.hpp"
 #include "transaq_client.hpp"
 #include "transaq_wrapper.hpp"
@@ -29,8 +29,14 @@ public:
         : options_(options)
         , sigset_(service_, SIGINT, SIGTERM)
     {
-        handlers_["ticks"] = &impl::handle_ticks;
-        handlers_["server_status"] = &impl::handle_server_status;
+        handlers_["ticks"]			= &impl::handle_ticks;
+		handlers_["markets"]		= &impl::handle_markets;
+        handlers_["securities"]		= &impl::handle_securities;
+        handlers_["candlekinds"]	= &impl::handle_candlekinds;
+        handlers_["server_status"]	= &impl::handle_server_status;
+		handlers_["client"]         = &impl::handle_client;
+		handlers_["positions"]      = &impl::handle_positions;
+		handlers_["overnight"]      = &impl::handle_overnight;
 
         sigset_.async_wait(boost::bind(&impl::handle_signal, this, _1, _2));
         wrapper_.reset
@@ -157,9 +163,9 @@ private: // packet handlers:
     {
         if (node.attribute("connected").as_bool(false))
         {
-            if (node.attribute("connected").as_bool(false))
+            if (node.attribute("recover").as_bool(false))
             {
-                std::clog << get_time() << ": connection lost, recovering..." << std::endl;
+                std::clog << time::now() << ": connection lost, recovering..." << std::endl;
 				for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
 				{
 					i->second->recovering();
@@ -168,7 +174,7 @@ private: // packet handlers:
             else
             {
                 int32_t id = node.attribute("id").as_int();
-                std::clog << get_time() << ": connected: " << id << std::endl;
+                std::clog << time::now() << ": connected: " << id << std::endl;
 				for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
 				{
 					i->second->connected(id); 
@@ -180,11 +186,11 @@ private: // packet handlers:
             std::string message = node.text().as_string();
             if(message.empty())
             {
-                std::clog << get_time() << ": connection failed" << std::endl;
+                std::clog << time::now() << ": connection failed" << std::endl;
             }
             else
             {
-                std::clog << get_time() << ": connection failed: '" << message << "'" << std::endl;
+                std::clog << time::now() << ": connection failed: '" << message << "'" << std::endl;
             }
 			for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
 			{
@@ -194,9 +200,134 @@ private: // packet handlers:
         }
     }
 
+	void handle_markets(pugi::xml_node const& node)
+	{
+		std::map<int32_t, std::string> markets;
+		pugi::xml_node_iterator i, end = node.end();
+        for( i = node.begin(); i != end; ++i )
+		{
+			markets[i->attribute("id").as_int()] = i->text().as_string();
+		}
+		if (!markets.empty())
+		{
+			for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+			{
+				i->second->markets(markets); 
+			}
+		}
+	}
+
+    void handle_securities(pugi::xml_node const& node)
+    {
+        types::securities_t securities;
+        pugi::xml_node_iterator i, end = node.end();
+        for( i = node.begin(); i != end; ++i )
+        {
+            types::security_t security;
+            security.secid = i->attribute("secid").as_int();
+			security.active = i->attribute("active").as_bool();
+            security.seccode = i->child("seccode").text().as_string();
+            security.market = i->child("market").text().as_int();
+            security.shortname = i->child("shortname").text().as_string();
+			security.decimals = i->child("decimals").text().as_int();
+            security.minstep = i->child("minstep").text().as_double();
+            security.lotsize = i->child("lotsize").text().as_int();
+            security.point_cost = i->child("point_cost").text().as_double();
+            pugi::xml_node opmask = i->child("opmask");
+            security.usecredit = opmask.attribute("usecredit").as_bool(false);
+            security.bymarket = opmask.attribute("bymarket").as_bool(false);
+            security.nosplit = opmask.attribute("nosplit").as_bool(false);
+            security.immorcancel = opmask.attribute("immorcancel").as_bool(false);
+            security.cancelbalance = opmask.attribute("cancelbalance").as_bool(false);
+            security.sectype = i->child("sectype").text().as_string();
+			securities[security.seccode] = security;
+        }
+        if (!securities.empty())
+        {
+            for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+            {
+                i->second->securities(securities); 
+            }
+        }
+    }
+
+	void handle_candlekinds(pugi::xml_node const& node)
+	{
+		types::candlekinds_t candlekinds;
+		pugi::xml_node_iterator i, end = node.end();
+        for( i = node.begin(); i != end; ++i )
+		{
+			types::candlekind_t kind;
+			int32_t id = i->child("id").text().as_int();
+			kind.name =	i->child("name").text().as_string();
+			kind.period = i->child("period").text().as_string();
+			candlekinds[id] = kind;
+		}
+		if (!candlekinds.empty())
+		{
+			for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+			{
+				i->second->candlekinds(candlekinds); 
+			}
+		}
+	}
+
     void handle_ticks(pugi::xml_node const& node)
     {
-        // TODO: parse ticks here
+        types::ticks_t ticks;
+        pugi::xml_node_iterator i, end = node.end();
+        for( i = node.begin(); i != end; ++i )
+        {
+            types::tick_t tick;
+            tick.secid = i->child("secid").text().as_int();
+            tick.tradeno = boost::lexical_cast<int64_t>(i->child("tradeno").text().as_string());
+			std::string tradetime = i->child("tradetime").text().as_string();
+            tick.tradetime = time::parse(tradetime);
+            tick.price = boost::lexical_cast<double>(i->child("price").text().as_string());
+            tick.quantity = i->child("quantity").text().as_int();
+            tick.period = i->child("period").text().as_string();
+            tick.buysell = i->child("buysell").text().as_string();
+            tick.openinterest = i->child("openinterest").text().as_int();
+            ticks.push_back(tick);
+        }
+        if (!ticks.empty())
+        {
+            for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+            {
+                i->second->ticks(ticks); 
+            }
+        }
+    }
+
+    void handle_client(pugi::xml_node const& node)
+    {
+        types::client_t client;
+        client.id = node.attribute("id").as_string();
+        client.remove = node.attribute("remove").as_bool();
+        client.currency = node.child("currency").text().as_string();
+        client.type = node.child("type").text().as_string();
+        client.ml_intraday = node.child("ml_intraday").text().as_int();
+        client.ml_overnight = node.child("ml_overnight").text().as_int();
+        client.ml_restrict = node.child("ml_restrict").text().as_double();
+        client.ml_call = node.child("ml_call").text().as_double();
+        client.ml_close = node.child("ml_close").text().as_double();
+        for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+        {
+            i->second->client(client); 
+        }
+    }
+
+    void handle_positions(pugi::xml_node const& node)
+    {
+        // TODO: Parse positions
+    }
+
+    void handle_overnight(pugi::xml_node const& node)
+    {
+        for( iter_t i = strategies_.begin(), end = strategies_.end(); i != end; ++i )
+        {
+            i->second->overnight(node.attribute("status").as_bool()); 
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////

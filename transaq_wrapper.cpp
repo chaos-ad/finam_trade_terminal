@@ -26,7 +26,7 @@ public:
 public:
     impl(callback_t const& callback, std::string const& libpath, std::string const& logdir, int32_t loglevel)
         : library_(library::load(libpath), library::unload)
-		, callback_fn_(callback)
+        , callback_fn_(callback)
         , initialize_fn_(library::load_fun<initialize_t>(library_.get(), "Initialize"))
         , uninitialize_fn_(library::load_fun<uninitialize_t>(library_.get(), "UnInitialize"))
         , set_log_level_fn_(library::load_fun<set_log_level_t>(library_.get(), "SetLogLevel"))
@@ -34,13 +34,13 @@ public:
         , free_memory_fn_(library::load_fun<free_memory_t>(library_.get(), "FreeMemory"))
         , send_command_fn_(library::load_fun<send_command_t>(library_.get(), "SendCommand"))
     {
-		boost::shared_ptr<char> error(initialize_fn_(logdir.c_str(), loglevel), free_memory_fn_);
+        boost::shared_ptr<char> error(initialize_fn_(logdir.c_str(), loglevel), free_memory_fn_);
         if (error)
         {
             throw std::runtime_error(error.get());
         }
 
-		internal_callback_t int_callback = &impl::handle_data_raw;
+        internal_callback_t int_callback = &impl::handle_data_raw;
         set_callback_fn_(int_callback, static_cast<void*>(this));
     }
 
@@ -52,8 +52,8 @@ public:
 public:
     std::string send_command(std::string const& cmd)
     {
-		boost::shared_ptr<char> result(send_command_fn_(cmd.c_str()), free_memory_fn_);
-		return std::string(result.get());
+        boost::shared_ptr<char> result(send_command_fn_(cmd.c_str()), free_memory_fn_);
+        return std::string(result.get());
     }
 
 private:
@@ -69,43 +69,43 @@ private:
     }
 
 private:
-	struct library 
-	{
-		static void unload(void * library) 
-		{
-			FreeLibrary(static_cast<HMODULE>(library));
-		}
+    struct library 
+    {
+        static void unload(void * library) 
+        {
+            FreeLibrary(static_cast<HMODULE>(library));
+        }
 
-		static void* load(std::string const& path)
-		{
-			HMODULE module = LoadLibraryA(path.c_str());
-			if (!module)
-			{
-				throw std::runtime_error("library not found");
-			}
-			return static_cast<void*>(module);
-		}
+        static void* load(std::string const& path)
+        {
+            HMODULE module = LoadLibraryA(path.c_str());
+            if (!module)
+            {
+                throw std::runtime_error("library not found");
+            }
+            return static_cast<void*>(module);
+        }
 
-		static void* load_fun_raw(void * library, std::string const& name)
-		{
-			void * address = GetProcAddress(static_cast<HMODULE>(library), name.c_str());
-			if (!address)
-			{
-				throw std::runtime_error("function not found");
-			}
-			return address;
-		}
+        static void* load_fun_raw(void * library, std::string const& name)
+        {
+            void * address = GetProcAddress(static_cast<HMODULE>(library), name.c_str());
+            if (!address)
+            {
+                throw std::runtime_error("function not found");
+            }
+            return address;
+        }
 
-		template <class fun_t>
-		static fun_t load_fun(void * library, std::string const& name)
-		{
-			return reinterpret_cast<fun_t>(load_fun_raw(library, name));
-		}
-	};
+        template <class fun_t>
+        static fun_t load_fun(void * library, std::string const& name)
+        {
+            return reinterpret_cast<fun_t>(load_fun_raw(library, name));
+        }
+    };
 
 private:
     boost::shared_ptr<void>         library_;
-	callback_t                      callback_fn_;
+    callback_t                      callback_fn_;
     initialize_t                    initialize_fn_;
     uninitialize_t                  uninitialize_fn_;
     set_log_level_t                 set_log_level_fn_;
